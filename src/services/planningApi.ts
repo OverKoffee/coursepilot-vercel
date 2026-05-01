@@ -1,10 +1,8 @@
+import { supabase } from "../lib/supabase";
 import type {
-  // AuditResultsResponse,
   SchedulePreferences,
   ScheduleResultsResponse,
 } from "../types/planning";
-
-import { supabase } from "../lib/supabase";
 
 export interface AnalyzeTranscriptParams {
   file: File;
@@ -17,41 +15,26 @@ export interface GenerateScheduleOptionsParams {
   preferences: SchedulePreferences;
 }
 
+interface ParsedCourse {
+  course_code: string;
+  course_name: string;
+  credits: number;
+  grade: string;
+}
+
 const USE_MOCK_DATA = true;
-// const ANALYZE_TRANSCRIPT_ENDPOINT =
-//   "https://jpmngsr48i.execute-api.us-west-2.amazonaws.com/dev/plan/start";
-// "http://localhost:8000/plan/start";
 const GENERATE_SCHEDULE_ENDPOINT = "http://localhost:8000/plan/options";
 
-/*
-Note: this endpoint performs both analyze and generate calls
-const ORCHESTRATOR_ENDPOINT = "https://jpmngsr48i.execute-api.us-west-2.amazonaws.com"
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
 
-Currently, using /dev/plan/start , CORS enabled for dev stage
-*/
+  for (let i = 0; i < bytes.byteLength; i += 1) {
+    binary += String.fromCharCode(bytes[i]);
+  }
 
-// function getMockAuditResultsResponse(
-//   major: string,
-//   minor?: string,
-// ): AuditResultsResponse {
-//   console.log("Generating mock audit results for:", {
-//     major,
-//     minor: minor || "None",
-//   });
-
-//   return {
-//     session_id: "mock-session-001",
-//     total_transferred_credits: 84,
-//     accepted_courses: ["CMSC 150", "MATH 140", "ENGL 101"],
-//     needs_review_courses: ["BIO 201", "HIST 210"],
-//     remaining_requirements: [
-//       "CMSC 320",
-//       "CMSC 335",
-//       "Upper-level elective",
-//       "Capstone",
-//     ],
-//   };
-// }
+  return btoa(binary);
+}
 
 function getMockScheduleResultsResponse(
   sessionId: string,
@@ -123,69 +106,81 @@ function getMockScheduleResultsResponse(
   };
 }
 
-
 export async function analyzeTranscript({
   file,
   major,
   minor,
-}: {
-  file: File;
-  major: string;
-  minor?: string;
-}) {
-  const { data: userData } = await supabase.auth.getUser();
+}: AnalyzeTranscriptParams) {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
   const user = userData.user;
 
-  if (!user) {
-    throw new Error("User not authenticated");
+  if (userError || !user) {
+    throw new Error("User not authenticated.");
   }
 
-  // Faking our parsed data for now until parser is ready
-  const parsedCourses = [
-    {
-      course_code: "CMSC 131",
-      course_name: "Programming I",
-      credits: 3,
-    },
-    {
-      course_code: "MATH 140",
-      course_name: "Calculus I",
-      credits: 4,
-    },
-  ];
+  const fileBuffer = await file.arrayBuffer();
+  const fileBase64 = arrayBufferToBase64(fileBuffer);
 
-  // Store transcript record
+  const aiResponse = await fetch("/api/analyze-transcript", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fileBase64,
+      fileName: file.name,
+      major,
+      minor,
+    }),
+  });
+
+  if (!aiResponse.ok) {
+    const errorData = (await aiResponse.json()) as { error?: string };
+    throw new Error(errorData.error ?? "Transcript analysis failed.");
+  }
+
+  const analyzedTranscript = (await aiResponse.json()) as {
+    courses: ParsedCourse[];
+  };
+
+  const parsedCourses = analyzedTranscript.courses;
+
   const { error: uploadError } = await supabase
     .from("transcript_uploads")
     .insert({
       user_id: user.id,
       file_name: file.name,
-      parsed_text: "Mock parsed transcript data",
+      parsed_text: `AI parsed ${parsedCourses.length} courses from ${file.name}.`,
     });
 
   if (uploadError) {
     throw new Error(uploadError.message);
   }
 
-  // Store completed courses
   const { error: courseError } = await supabase
     .from("completed_courses")
     .insert(
-      parsedCourses.map((c) => ({
+      parsedCourses.map((course) => ({
         user_id: user.id,
-        ...c,
-      }))
+        course_code: course.course_code,
+        course_name: course.course_name,
+        credits: course.credits,
+        grade: course.grade,
+      })),
     );
 
   if (courseError) {
     throw new Error(courseError.message);
   }
 
-  // Return mock audit results
   return {
-    session_id: "local-session-001",
-    total_transferred_credits: 7,
-    accepted_courses: parsedCourses.map((c) => c.course_code),
+    session_id: crypto.randomUUID(),
+    total_transferred_credits: parsedCourses.reduce(
+      (sum, course) => sum + course.credits,
+      0,
+    ),
+    accepted_courses: parsedCourses.map((course) => course.course_code),
+    needs_review_courses: [],
     remaining_requirements: ["CMSC 320", "CMSC 335"],
   };
 }
@@ -196,11 +191,6 @@ export async function generateScheduleOptions({
 }: GenerateScheduleOptionsParams): Promise<ScheduleResultsResponse> {
   if (USE_MOCK_DATA) {
     await new Promise((resolve) => setTimeout(resolve, 900));
-
-    console.log("Mock generateScheduleOptions called with:", {
-      sessionId,
-      preferences,
-    });
 
     return getMockScheduleResultsResponse(sessionId, preferences);
   }
@@ -217,18 +207,7 @@ export async function generateScheduleOptions({
   });
 
   if (!response.ok) {
-    let errorMessage = `Schedule generation failed with status ${response.status}`;
-
-    try {
-      const errorData = (await response.json()) as { message?: string };
-      if (errorData.message) {
-        errorMessage = errorData.message;
-      }
-    } catch {
-      // ignore
-    }
-
-    throw new Error(errorMessage);
+    throw new Error(`Schedule generation failed with status ${response.status}`);
   }
 
   return (await response.json()) as ScheduleResultsResponse;
