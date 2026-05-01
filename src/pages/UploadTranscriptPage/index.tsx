@@ -44,10 +44,6 @@ export default function UploadTranscriptPage() {
         minor: minor || undefined,
       });
 
-      console.log("FULL BACKEND RESPONSE:", auditResults);
-      alert("Check console for backend response");
-      return; // TEMPORARY EARLY RETURN FOR TESTING
-
       localStorage.setItem("session_id", auditResults.session_id);
       localStorage.setItem("audit_results", JSON.stringify(auditResults));
       localStorage.setItem("selected_major", major);
@@ -65,7 +61,7 @@ export default function UploadTranscriptPage() {
       setErrorMessage(
         err instanceof Error
           ? err.message
-          : "An unexpected error occurred while analyzing the transcript.",
+          : "Error with analyzing the transcript.",
       );
     } finally {
       setIsUploading(false);

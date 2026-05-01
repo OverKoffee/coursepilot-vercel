@@ -1,25 +1,73 @@
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
 import type { AuditResultsResponse } from "../../types/planning";
 import styles from "./AuditResultsPage.module.css";
 
-interface LocationState {
-  auditResults?: AuditResultsResponse;
-  major?: string;
-  minor?: string;
+interface CompletedCourse {
+  course_code: string;
+  credits: number | null;
 }
 
 export default function AuditResultsPage() {
-  const location = useLocation();
-  const state = (location.state as LocationState | null) ?? null;
+  const [auditResults, setAuditResults] = useState<AuditResultsResponse | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
-  const storedAuditResults = localStorage.getItem("audit_results");
-  const parsedStoredAuditResults = storedAuditResults
-    ? (JSON.parse(storedAuditResults) as AuditResultsResponse)
-    : null;
+  useEffect(() => {
+    const loadAuditResults = async () => {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
 
-  const auditResults = state?.auditResults ?? parsedStoredAuditResults;
+      if (userError || !userData.user) {
+        setShouldRedirect(true);
+        setIsLoading(false);
+        return;
+      }
 
-  if (!auditResults) {
+      const { data, error } = await supabase
+        .from("completed_courses")
+        .select("course_code, credits")
+        .eq("user_id", userData.user.id)
+        .order("created_at", { ascending: false });
+
+      if (error || !data || data.length === 0) {
+        setShouldRedirect(true);
+        setIsLoading(false);
+        return;
+      }
+
+      const completedCourses = data as CompletedCourse[];
+
+      const acceptedCourses = completedCourses.map((course) => course.course_code);
+
+      const totalCredits = completedCourses.reduce(
+        (sum, course) => sum + (course.credits ?? 0),
+        0,
+      );
+
+      const mockRemainingRequirements = ["CMSC 320", "CMSC 335"];
+
+      setAuditResults({
+        session_id: "supabase-session",
+        total_transferred_credits: totalCredits,
+        accepted_courses: acceptedCourses,
+        needs_review_courses: [],
+        remaining_requirements: mockRemainingRequirements,
+      });
+
+      setIsLoading(false);
+    };
+
+    void loadAuditResults();
+  }, []);
+
+  if (isLoading) {
+    return <p style={{ padding: "2rem" }}>Loading audit results...</p>;
+  }
+
+  if (shouldRedirect || !auditResults) {
     return <Navigate to="/upload" replace />;
   }
 
