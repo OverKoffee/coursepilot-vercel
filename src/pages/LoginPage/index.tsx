@@ -1,19 +1,33 @@
 import { useState } from "react";
-import { signInWithRedirect } from "aws-amplify/auth";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../../lib/supabase";
 import styles from "./LoginPage.module.css";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleCognitoLogin = async () => {
-    setMessage("Redirecting to login...");
+  const handleLogin = async () => {
+    setIsLoading(true);
+    setMessage("");
 
-    try {
-      await signInWithRedirect();
-    } catch (error) {
-      console.error(error);
-      setMessage("Unable to start login.");
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setIsLoading(false);
+
+    if (error) {
+      setMessage(error.message);
+      return;
     }
+
+    navigate("/upload", { replace: true });
   };
 
   return (
@@ -45,12 +59,29 @@ export default function LoginPage() {
         </div>
 
         <div className={styles.form}>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={styles.input}
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={styles.input}
+          />
+
           <button
             type="button"
-            onClick={handleCognitoLogin}
+            onClick={handleLogin}
+            disabled={!email || !password || isLoading}
             className={`btn btn-primary ${styles.primaryButton}`}
           >
-            Sign in with Cognito
+            {isLoading ? "Signing in..." : "Sign in"}
           </button>
         </div>
 

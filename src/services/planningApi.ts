@@ -4,6 +4,8 @@ import type {
   ScheduleResultsResponse,
 } from "../types/planning";
 
+import { supabase } from "../lib/supabase";
+
 export interface AnalyzeTranscriptParams {
   file: File;
   major: string;
@@ -121,6 +123,7 @@ function getMockScheduleResultsResponse(
   };
 }
 
+
 export async function analyzeTranscript({
   file,
   major,
@@ -130,31 +133,61 @@ export async function analyzeTranscript({
   major: string;
   minor?: string;
 }) {
-  const formData = new FormData();
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
 
-  formData.append("file", file);
-  formData.append("major", major);
-
-  if (minor) {
-    formData.append("minor", minor);
+  if (!user) {
+    throw new Error("User not authenticated");
   }
 
-  const res = await fetch(
-    "https://jpmngsr48i.execute-api.us-west-2.amazonaws.com/dev/plan/start",
+  // Faking our parsed data for now until parser is ready
+  const parsedCourses = [
     {
-      method: "POST",
-      body: formData,
-    }
-  );
+      course_code: "CMSC 131",
+      course_name: "Programming I",
+      credits: 3,
+    },
+    {
+      course_code: "MATH 140",
+      course_name: "Calculus I",
+      credits: 4,
+    },
+  ];
 
-  const text = await res.text();
-  console.log("RAW RESPONSE FROM BACKEND: ", text);
+  // Store transcript record
+  const { error: uploadError } = await supabase
+    .from("transcript_uploads")
+    .insert({
+      user_id: user.id,
+      file_name: file.name,
+      parsed_text: "Mock parsed transcript data",
+    });
 
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
+  if (uploadError) {
+    throw new Error(uploadError.message);
   }
+
+  // Store completed courses
+  const { error: courseError } = await supabase
+    .from("completed_courses")
+    .insert(
+      parsedCourses.map((c) => ({
+        user_id: user.id,
+        ...c,
+      }))
+    );
+
+  if (courseError) {
+    throw new Error(courseError.message);
+  }
+
+  // Return mock audit results
+  return {
+    session_id: "local-session-001",
+    total_transferred_credits: 7,
+    accepted_courses: parsedCourses.map((c) => c.course_code),
+    remaining_requirements: ["CMSC 320", "CMSC 335"],
+  };
 }
 
 export async function generateScheduleOptions({

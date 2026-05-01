@@ -1,7 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
 import UploadTranscriptPage from "./pages/UploadTranscriptPage";
 import AuditResultsPage from "./pages/AuditResultsPage";
 import PreferencesPage from "./pages/PreferencesPage";
@@ -20,7 +19,6 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/upload" element={<UploadTranscriptPage />} />
