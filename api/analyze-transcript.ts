@@ -8,16 +8,23 @@ interface ParsedCourse {
   grade: string;
 }
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== "POST") {
     return Response.json({ error: "Method not allowed" }, { status: 405 });
   }
 
   try {
+    if (!process.env.OPENAI_API_KEY) {
+      return Response.json(
+        { error: "Missing OPENAI_API_KEY environment variable." },
+        { status: 500 },
+      );
+    }
+
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
     const body = await request.json();
 
     const fileBase64 = body.fileBase64 as string | undefined;
@@ -97,7 +104,7 @@ export default async function handler(request: Request): Promise<Response> {
       courses: parsed.courses,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Analyze transcript error:", error);
 
     return Response.json(
       {
