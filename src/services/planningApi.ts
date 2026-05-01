@@ -22,6 +22,14 @@ interface ParsedCourse {
   grade: string;
 }
 
+export interface AnalyzeTranscriptResponse {
+  session_id: string;
+  total_transferred_credits: number;
+  accepted_courses: string[];
+  needs_review_courses: string[];
+  remaining_requirements: string[];
+}
+
 const USE_MOCK_DATA = true;
 const GENERATE_SCHEDULE_ENDPOINT = "http://localhost:8000/plan/options";
 
@@ -110,7 +118,7 @@ export async function analyzeTranscript({
   file,
   major,
   minor,
-}: AnalyzeTranscriptParams) {
+}: AnalyzeTranscriptParams): Promise<AnalyzeTranscriptResponse> {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   const user = userData.user;
 

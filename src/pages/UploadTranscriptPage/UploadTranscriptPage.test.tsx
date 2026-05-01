@@ -85,7 +85,7 @@ describe("UploadTranscriptPage", () => {
     const user = userEvent.setup();
 
     vi.mocked(analyzeTranscript).mockResolvedValue({
-      session_id: "mock-session-001",
+      session_id: "00000000-0000-4000-8000-000000000001",
       total_transferred_credits: 84,
       accepted_courses: ["CMSC 150"],
       needs_review_courses: ["BIO 201"],
