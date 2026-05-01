@@ -1,0 +1,41 @@
+.header {
+  background: var(--surface-color);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.navLinks {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.link {
+  color: var(--text-color);
+  font-weight: 500;
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.link:hover {
+  background-color: var(--muted-color);
+  color: var(--text-strong-color);
+}
+
+.active {
+  background-color: var(--primary-soft-color);
+  color: var(--primary-color);
+}

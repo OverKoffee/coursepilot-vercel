@@ -1,0 +1,10 @@
+.footer {
+  border-top: 1px solid var(--border-color);
+  background: var(--surface-color);
+  color: var(--text-muted-color);
+  font-size: 0.9rem;
+}
+
+.footer p {
+  margin: 0;
+}

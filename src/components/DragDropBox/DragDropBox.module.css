@@ -1,0 +1,26 @@
+.dropzone {
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--surface-color);
+  min-height: 100px;
+  width: min(520px, 100%);
+  margin: 1rem auto 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  transition: 0.2s ease;
+}
+
+.dropzone:hover {
+  border-color: var(--primary-color);
+  background-color: var(--primary-soft-color);
+}
+
+.active {
+  border-color: var(--primary-color);
+  background-color: var(--primary-soft-color);
+}

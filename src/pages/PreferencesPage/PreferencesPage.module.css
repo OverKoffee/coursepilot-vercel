@@ -1,0 +1,162 @@
+.page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.card {
+  width: min(980px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
+}
+
+.brandText {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.sectionCard {
+  border: 1px solid rgba(91, 141, 239, 0.18);
+  background: rgba(8, 19, 46, 0.78);
+  border-radius: 18px;
+  padding: 22px 24px;
+}
+
+.sectionTitle {
+  margin: 0 0 14px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.buttonRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.optionButton {
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid rgba(91, 141, 239, 0.18);
+  background: rgba(12, 24, 56, 0.72);
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.optionButton:hover {
+  border-color: rgba(91, 141, 239, 0.35);
+  color: var(--text-primary);
+}
+
+.optionButtonActive {
+  border-color: rgba(69, 116, 255, 0.9);
+  background: rgba(43, 86, 214, 0.22);
+  color: var(--text-primary);
+}
+
+.targetRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.targetInput {
+  width: 220px;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(91, 141, 239, 0.22);
+  background: rgba(12, 24, 56, 0.72);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.targetInput:focus {
+  outline: none;
+  border-color: rgba(69, 116, 255, 0.9);
+}
+
+.targetInput::placeholder {
+  color: var(--text-secondary);
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.actionButton {
+  flex: 1;
+  min-height: 52px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 760px) {
+  .buttonRow {
+    grid-template-columns: 1fr;
+  }
+
+  .targetRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .targetInput {
+    width: 100%;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actionButton {
+    width: 100%;
+  }
+}

@@ -1,0 +1,150 @@
+.page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  width: 100%;
+  max-width: 860px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo {
+  height: 28px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
+.brandText {
+  font-size: var(--font-title-size);
+  font-weight: var(--font-title-weight);
+  color: var(--text-strong-color);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.title {
+  color: var(--text-strong-color);
+}
+
+.subtitle {
+  color: var(--text-muted-color);
+  max-width: 60ch;
+}
+
+.uploadBlock {
+  display: flex;
+  flex-direction: column;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: var(--font-label-size);
+  font-weight: var(--font-label-weight);
+  color: var(--text-strong-color);
+}
+
+.selectWrap {
+  position: relative;
+}
+
+.select {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 3rem 0 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--surface-color);
+  color: var(--text-color);
+  font: inherit;
+  appearance: none;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.select:hover {
+  border-color: var(--primary-color);
+}
+
+.select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-soft-color);
+}
+
+.selectWrap::after {
+  content: "⌄";
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  transform: translateY(-52%);
+  font-size: 1rem;
+  color: var(--text-muted-color);
+  pointer-events: none;
+}
+
+.button {
+  width: 100%;
+  min-height: 56px;
+}
+
+.resultsCard {
+  padding: 1.25rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  background: var(--muted-color);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.resultsTitle {
+  color: var(--text-strong-color);
+}
+
+.resultItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.resultLabel {
+  font-size: var(--font-meta-size);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted-color);
+}
+
+.resultValue {
+  color: var(--text-color);
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 1.5rem;
+  }
+}
