@@ -119,6 +119,7 @@ export async function analyzeTranscript({
   major,
   minor,
 }: AnalyzeTranscriptParams): Promise<AnalyzeTranscriptResponse> {
+  console.log("1. Checking Supabase user...");
   const { data: userData, error: userError } = await supabase.auth.getUser();
   const user = userData.user;
 
@@ -126,14 +127,23 @@ export async function analyzeTranscript({
     throw new Error("User not authenticated.");
   }
 
+  console.log("2. Reading file...");
   const fileBuffer = await file.arrayBuffer();
   const fileBase64 = arrayBufferToBase64(fileBuffer);
+
+  console.log("3. Calling API...");
+  const controller = new AbortController();
+
+  const timeoutId = window.setTimeout(() => {
+    controller.abort();
+  }, 30000);
 
   const aiResponse = await fetch("/api/analyze-transcript", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
+    signal: controller.signal,
     body: JSON.stringify({
       fileBase64,
       fileName: file.name,
@@ -141,6 +151,10 @@ export async function analyzeTranscript({
       minor,
     }),
   });
+
+  window.clearTimeout(timeoutId);
+
+  console.log("4. API response status:", aiResponse.status);
 
   if (!aiResponse.ok) {
     const errorData = (await aiResponse.json()) as { error?: string };
@@ -215,7 +229,9 @@ export async function generateScheduleOptions({
   });
 
   if (!response.ok) {
-    throw new Error(`Schedule generation failed with status ${response.status}`);
+    throw new Error(
+      `Schedule generation failed with status ${response.status}`,
+    );
   }
 
   return (await response.json()) as ScheduleResultsResponse;
