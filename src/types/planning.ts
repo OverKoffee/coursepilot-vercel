@@ -1,9 +1,20 @@
+export interface CourseCard {
+  course_code: string;
+  course_name: string;
+  credits: number;
+  grade?: string;
+}
+
 export interface AuditResultsResponse {
   session_id: string;
-  total_transferred_credits: number;
-  accepted_courses: string[];
-  needs_review_courses: string[];
-  remaining_requirements: string[];
+  major: string;
+  minor?: string;
+  completed_courses: CourseCard[];
+  total_completed_credits: number;
+  credits_remaining: number;
+  eligible_courses: CourseCard[];
+  remaining_requirements: CourseCard[];
+  needs_review_courses: CourseCard[];
 }
 
 export interface SchedulePreferences {

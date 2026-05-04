@@ -1,9 +1,31 @@
 import { Link, Navigate, useLocation } from "react-router-dom";
-import type { ScheduleResultsResponse } from "../../types/planning";
+import type {
+  AuditResultsResponse,
+  SchedulePreferences,
+  ScheduleResultsResponse,
+} from "../../types/planning";
 import styles from "./ResultsPage.module.css";
 
 interface LocationState {
   scheduleResults?: ScheduleResultsResponse;
+}
+
+function readAuditResults(): AuditResultsResponse | null {
+  const storedAuditResults =
+    localStorage.getItem("audit_results") ??
+    sessionStorage.getItem("coursepilot_audit_context");
+
+  return storedAuditResults
+    ? (JSON.parse(storedAuditResults) as AuditResultsResponse)
+    : null;
+}
+
+function readPreferences(): SchedulePreferences | null {
+  const storedPreferences = localStorage.getItem("schedule_preferences");
+
+  return storedPreferences
+    ? (JSON.parse(storedPreferences) as SchedulePreferences)
+    : null;
 }
 
 export default function ResultsPage() {
@@ -16,10 +38,17 @@ export default function ResultsPage() {
     : null;
 
   const scheduleResults = state?.scheduleResults ?? parsedStoredScheduleResults;
+  const auditResults = readAuditResults();
+  const preferences = readPreferences();
 
   if (!scheduleResults) {
     return <Navigate to="/preferences" replace />;
   }
+
+  const coursesInPlan = scheduleResults.recommended_plan.semesters.reduce(
+    (total, semester) => total + semester.courses.length,
+    0,
+  );
 
   return (
     <section className={`page ${styles.page}`}>
@@ -34,24 +63,80 @@ export default function ResultsPage() {
         </div>
 
         <div className={styles.header}>
-          <h1 className={styles.title}>Schedule options</h1>
-          <p className={styles.subtitle}>
-            Here is the recommended path based on your transcript and preferences.
-          </p>
+          <div>
+            <h1 className={styles.title}>Schedule options</h1>
+            <p className={styles.subtitle}>
+              Here is the recommended path based on your transcript and
+              preferences.
+            </p>
+          </div>
+
+          <span className={styles.sessionBadge}>
+            Session {scheduleResults.session_id}
+          </span>
         </div>
+
+        <div className={styles.metricsGrid}>
+          <div className={styles.metricCard}>
+            <span className={styles.metricValue}>
+              {auditResults?.credits_remaining ?? 0}
+            </span>
+            <span className={styles.metricLabel}>credits remaining</span>
+          </div>
+
+          <div className={styles.metricCard}>
+            <span className={styles.metricValue}>{coursesInPlan}</span>
+            <span className={styles.metricLabel}>courses in this plan</span>
+          </div>
+
+          <div className={styles.metricCard}>
+            <span className={styles.metricValue}>
+              {preferences?.target_graduation ?? "Not set"}
+            </span>
+            <span className={styles.metricLabel}>target graduation</span>
+          </div>
+        </div>
+
+        {preferences ? (
+          <div className={styles.preferencePills}>
+            <span className={styles.preferencePill}>
+              Pace: {preferences.enrollment_pace}
+            </span>
+            <span className={styles.preferencePill}>
+              Commitments: {preferences.outside_commitments}
+            </span>
+            <span className={styles.preferencePill}>
+              Intensity: {preferences.course_intensity}
+            </span>
+          </div>
+        ) : null}
 
         <div className={styles.recommendedCard}>
           <div className={styles.recommendedHeader}>
             <h2 className={styles.sectionTitle}>
               {scheduleResults.recommended_plan.title}
             </h2>
-            <span className={styles.recommendedBadge}>Recommended</span>
+
+            {scheduleResults.recommended_plan.recommended ? (
+              <span className={styles.recommendedBadge}>Recommended</span>
+            ) : null}
           </div>
 
           <div className={styles.semesterGrid}>
             {scheduleResults.recommended_plan.semesters.map((semester) => (
-              <div key={semester.term_label} className={styles.semesterCard}>
-                <h3 className={styles.semesterTitle}>{semester.term_label}</h3>
+              <article
+                key={semester.term_label}
+                className={styles.semesterCard}
+              >
+                <div className={styles.semesterHeader}>
+                  <h3 className={styles.semesterTitle}>
+                    {semester.term_label}
+                  </h3>
+                  <span className={styles.courseCountBadge}>
+                    {semester.courses.length} courses
+                  </span>
+                </div>
+
                 <ul className={styles.list}>
                   {semester.courses.map((course) => (
                     <li key={course} className={styles.listItem}>
@@ -59,7 +144,7 @@ export default function ResultsPage() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </article>
             ))}
           </div>
         </div>

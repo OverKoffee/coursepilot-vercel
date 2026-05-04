@@ -5,6 +5,8 @@ import {
   getRemainingRequirements,
 } from "../data/courseRequirements";
 import type {
+  AuditResultsResponse,
+  CourseCard,
   SchedulePreferences,
   ScheduleResultsResponse,
 } from "../types/planning";
@@ -25,14 +27,6 @@ interface ParsedCourse {
   course_name: string;
   credits: number;
   grade: string;
-}
-
-export interface AnalyzeTranscriptResponse {
-  session_id: string;
-  total_transferred_credits: number;
-  accepted_courses: string[];
-  needs_review_courses: string[];
-  remaining_requirements: string[];
 }
 
 const USE_MOCK_TRANSCRIPT_ANALYSIS = false;
@@ -65,14 +59,21 @@ function normalizeTranscriptAnalysisResponse(courses: ParsedCourse[]) {
 
     uniqueCourses.set(courseCode, {
       course_code: courseCode,
-      course_name:
-        course.course_name || courseCatalog[courseCode]?.title || "",
+      course_name: course.course_name || courseCatalog[courseCode]?.title || "",
       credits: course.credits || courseCatalog[courseCode]?.credits || 3,
       grade: course.grade || "T",
     });
   }
 
   return Array.from(uniqueCourses.values());
+}
+
+function toCourseCard(courseCode: string): CourseCard {
+  return {
+    course_code: courseCode,
+    course_name: courseCatalog[courseCode]?.title ?? "",
+    credits: courseCatalog[courseCode]?.credits ?? 3,
+  };
 }
 
 function getMockTranscriptCourses(): ParsedCourse[] {
@@ -145,13 +146,49 @@ function getMockScheduleResultsResponse(
   };
 }
 
+function normalizeGrade(grade: string): string {
+  return grade.trim().toUpperCase();
+}
 
-// TODO: Remove console logs once flow working.
+// Added helper functions to determine if a course is completed or needs review based on grade.
+function isPassingForDegree(grade: string): boolean {
+  const normalizedGrade = normalizeGrade(grade);
+
+  const validGrades = [
+    "A",
+    "A-",
+    "B+",
+    "B",
+    "B-",
+    "C+",
+    "C",
+    "T",
+    "TR",
+    "TA",
+    "TRANSFER",
+  ];
+
+  return validGrades.includes(normalizedGrade);
+}
+
+function needsManualReview(grade: string): boolean {
+  const normalizedGrade = normalizeGrade(grade);
+
+  return (
+    normalizedGrade === "C-" ||
+    normalizedGrade === "D+" ||
+    normalizedGrade === "D" ||
+    normalizedGrade === "D-" ||
+    normalizedGrade === "F"
+  );
+}
+
+// TODO: Remove console.logs once flow working.
 export async function analyzeTranscript({
   file,
   major,
   minor,
-}: AnalyzeTranscriptParams): Promise<AnalyzeTranscriptResponse> {
+}: AnalyzeTranscriptParams): Promise<AuditResultsResponse> {
   console.log("1. Checking Supabase user...");
 
   const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -216,61 +253,108 @@ export async function analyzeTranscript({
     );
   }
 
-  const acceptedCourses = parsedCourses.map((course) => course.course_code);
-  const remainingRequirements = getRemainingRequirements(major, acceptedCourses);
-  const eligibleCourses = getEligibleCourses(remainingRequirements);
+  const sessionId = crypto.randomUUID();
+
+  const validDegreeCourses = parsedCourses.filter((course) =>
+    isPassingForDegree(course.grade),
+  );
+
+  const reviewCourses = parsedCourses.filter((course) =>
+    needsManualReview(course.grade),
+  );
+
+  const completedCourseCodes = validDegreeCourses.map(
+    (course) => course.course_code,
+  );
+
+  const remainingRequirementCodes = getRemainingRequirements(
+    major,
+    completedCourseCodes,
+  );
+  const eligibleCourseCodes = getEligibleCourses(remainingRequirementCodes);
+
+  const completedCourseCards: CourseCard[] = validDegreeCourses.map(
+    (course) => ({
+      course_code: course.course_code,
+      course_name: course.course_name,
+      credits: course.credits,
+      grade: course.grade,
+    }),
+  );
+
+  const needsReviewCourseCards: CourseCard[] = reviewCourses.map((course) => ({
+    course_code: course.course_code,
+    course_name: course.course_name,
+    credits: course.credits,
+    grade: course.grade,
+  }));
+
+  const remainingRequirementCards = remainingRequirementCodes.map(toCourseCard);
+
+  const eligibleCourseCards = eligibleCourseCodes.map(toCourseCard);
+
+  const totalCompletedCredits = completedCourseCards.reduce(
+    (sum, course) => sum + course.credits,
+    0,
+  );
+
+  const creditsRemaining = remainingRequirementCards.reduce(
+    (sum, course) => sum + course.credits,
+    0,
+  );
 
   console.log("Parsed courses:", parsedCourses);
-  console.log("Accepted courses:", acceptedCourses);
-  console.log("Remaining requirements:", remainingRequirements);
-  console.log("Eligible courses:", eligibleCourses);
+  console.log("Completed course codes:", completedCourseCodes);
+  console.log("Remaining requirements:", remainingRequirementCards);
+  console.log("Eligible courses:", eligibleCourseCards);
+  console.log("Credits remaining:", creditsRemaining);
 
-  const { error: uploadError } = await supabase.from("transcript_uploads").insert({
-    user_id: user.id,
-    file_name: file.name,
-    parsed_text: `AI parsed ${parsedCourses.length} courses from ${file.name}.`,
-  });
+  const { error: uploadError } = await supabase
+    .from("transcript_uploads")
+    .insert({
+      user_id: user.id,
+      file_name: file.name,
+      parsed_text: `AI parsed ${parsedCourses.length} courses from ${file.name}.`,
+    });
 
   if (uploadError) {
     throw new Error(uploadError.message);
   }
 
-  const { error: courseError } = await supabase.from("completed_courses").insert(
-    parsedCourses.map((course) => ({
-      user_id: user.id,
-      course_code: course.course_code,
-      course_name: course.course_name,
-      credits: course.credits,
-      grade: course.grade,
-    })),
-  );
+  const { error: courseError } = await supabase
+    .from("completed_courses")
+    .insert(
+      parsedCourses.map((course) => ({
+        user_id: user.id,
+        course_code: course.course_code,
+        course_name: course.course_name,
+        credits: course.credits,
+        grade: course.grade,
+      })),
+    );
 
   if (courseError) {
     throw new Error(courseError.message);
   }
 
+  const auditContext: AuditResultsResponse = {
+    session_id: sessionId,
+    major,
+    minor,
+    completed_courses: completedCourseCards,
+    total_completed_credits: totalCompletedCredits,
+    credits_remaining: creditsRemaining,
+    eligible_courses: eligibleCourseCards,
+    remaining_requirements: remainingRequirementCards,
+    needs_review_courses: needsReviewCourseCards,
+  };
+
   sessionStorage.setItem(
     "coursepilot_audit_context",
-    JSON.stringify({
-      major,
-      minor,
-      accepted_courses: acceptedCourses,
-      remaining_requirements: remainingRequirements,
-      eligible_courses: eligibleCourses,
-      parsed_courses: parsedCourses,
-    }),
+    JSON.stringify(auditContext),
   );
 
-  return {
-    session_id: crypto.randomUUID(),
-    total_transferred_credits: parsedCourses.reduce(
-      (sum, course) => sum + course.credits,
-      0,
-    ),
-    accepted_courses: eligibleCourses,
-    needs_review_courses: [],
-    remaining_requirements: remainingRequirements,
-  };
+  return auditContext;
 }
 
 export async function generateScheduleOptions({
@@ -297,7 +381,9 @@ export async function generateScheduleOptions({
   });
 
   if (!response.ok) {
-    throw new Error(`Schedule generation failed with status ${response.status}`);
+    throw new Error(
+      `Schedule generation failed with status ${response.status}`,
+    );
   }
 
   return (await response.json()) as ScheduleResultsResponse;

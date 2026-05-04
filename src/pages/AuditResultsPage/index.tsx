@@ -1,75 +1,35 @@
-import { useEffect, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
-import { supabase } from "../../lib/supabase";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import type { AuditResultsResponse } from "../../types/planning";
 import styles from "./AuditResultsPage.module.css";
 
-interface CompletedCourse {
-  course_code: string;
-  credits: number | null;
+interface LocationState {
+  auditResults?: AuditResultsResponse;
 }
 
 export default function AuditResultsPage() {
-  const [auditResults, setAuditResults] = useState<AuditResultsResponse | null>(
-    null,
-  );
-  const [isLoading, setIsLoading] = useState(true);
-  const [shouldRedirect, setShouldRedirect] = useState(false);
+  const location = useLocation();
+  const state = (location.state as LocationState | null) ?? null;
 
-  useEffect(() => {
-    const loadAuditResults = async () => {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+  const storedAuditResults =
+    sessionStorage.getItem("coursepilot_audit_context") ??
+    localStorage.getItem("audit_results");
 
-      if (userError || !userData.user) {
-        setShouldRedirect(true);
-        setIsLoading(false);
-        return;
-      }
+  const parsedStoredAuditResults = storedAuditResults
+    ? (JSON.parse(storedAuditResults) as AuditResultsResponse)
+    : null;
 
-      const { data, error } = await supabase
-        .from("completed_courses")
-        .select("course_code, credits")
-        .eq("user_id", userData.user.id)
-        .order("created_at", { ascending: false });
+  const auditResults = state?.auditResults ?? parsedStoredAuditResults;
 
-      if (error || !data || data.length === 0) {
-        setShouldRedirect(true);
-        setIsLoading(false);
-        return;
-      }
-
-      const completedCourses = data as CompletedCourse[];
-
-      const acceptedCourses = completedCourses.map((course) => course.course_code);
-
-      const totalCredits = completedCourses.reduce(
-        (sum, course) => sum + (course.credits ?? 0),
-        0,
-      );
-
-      const mockRemainingRequirements = ["CMSC 320", "CMSC 335"];
-
-      setAuditResults({
-        session_id: "supabase-session",
-        total_transferred_credits: totalCredits,
-        accepted_courses: acceptedCourses,
-        needs_review_courses: [],
-        remaining_requirements: mockRemainingRequirements,
-      });
-
-      setIsLoading(false);
-    };
-
-    void loadAuditResults();
-  }, []);
-
-  if (isLoading) {
-    return <p style={{ padding: "2rem" }}>Loading audit results...</p>;
-  }
-
-  if (shouldRedirect || !auditResults) {
+  if (!auditResults) {
     return <Navigate to="/upload" replace />;
   }
+
+  localStorage.setItem("session_id", auditResults.session_id);
+  localStorage.setItem("audit_results", JSON.stringify(auditResults));
+
+  const declaredProgram = [auditResults.major, auditResults.minor]
+    .filter(Boolean)
+    .join(" • ");
 
   return (
     <section className={`page ${styles.page}`}>
@@ -85,70 +45,78 @@ export default function AuditResultsPage() {
 
         <div className={styles.header}>
           <h1 className={styles.title}>Audit Results</h1>
-        </div>
-
-        <div className={styles.summaryCard}>
-          <h2 className={styles.sectionTitle}>Summary</h2>
-
-          <div className={styles.creditRow}>
-            <span className={styles.creditValue}>
-              {auditResults.total_transferred_credits}
-            </span>
-            <span className={styles.creditLabel}>total credits transferred</span>
-          </div>
-
-          <p className={styles.summaryMeta}>
-            {auditResults.accepted_courses.length} eligible courses •{" "}
-            {auditResults.needs_review_courses.length} manual reviews
+          <p className={styles.subtitle}>
+            Review what is still left and which courses are ready to schedule
+            next.
           </p>
         </div>
 
-        <div className={styles.topGrid}>
-          <div className={styles.panel}>
-            <h3 className={styles.panelTitle}>Accepted</h3>
-            <div className={styles.badgeSuccess}>Green state</div>
-
-            {auditResults.accepted_courses.length > 0 ? (
-              <ul className={styles.list}>
-                {auditResults.accepted_courses.map((course) => (
-                  <li key={course} className={styles.listItem}>
-                    {course}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className={styles.emptyText}>No accepted courses.</p>
-            )}
+        <div className={styles.summaryCard}>
+          <div className={styles.summaryHeader}>
+            <div>
+              <h2 className={styles.sectionTitle}>Summary</h2>
+              {declaredProgram ? (
+                <p className={styles.summaryProgram}>{declaredProgram}</p>
+              ) : null}
+            </div>
           </div>
 
-          <div className={styles.panel}>
-            <h3 className={styles.panelTitle}>Needs Review</h3>
-            <div className={styles.badgeWarning}>Warning</div>
+          <div className={styles.metricsGrid}>
+            <div className={styles.metricCard}>
+              <span className={styles.metricValue}>
+                {auditResults.credits_remaining}
+              </span>
+              <span className={styles.metricLabel}>credits remaining</span>
+            </div>
 
-            {auditResults.needs_review_courses.length > 0 ? (
-              <ul className={styles.list}>
-                {auditResults.needs_review_courses.map((course) => (
-                  <li key={course} className={styles.listItem}>
-                    {course}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className={styles.emptyText}>No courses need review.</p>
-            )}
+            <div className={styles.metricCard}>
+              <span className={styles.metricValue}>
+                {auditResults.eligible_courses.length}
+              </span>
+              <span className={styles.metricLabel}>eligible right now</span>
+            </div>
           </div>
         </div>
 
-        <div className={styles.panelWide}>
-          <h3 className={styles.panelTitle}>Remaining Requirements</h3>
+        <div className={styles.panel}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h3 className={styles.panelTitle}>Eligible Courses</h3>
+              <p className={styles.panelSubtitle}>
+                These are the options we can use in schedule generation while
+                the backend planning flow is still mocked.
+              </p>
+            </div>
+          </div>
 
-          {auditResults.remaining_requirements.length > 0 ? (
-            <p className={styles.requirementsText}>
-              {auditResults.remaining_requirements.join(" • ")}
-            </p>
+          {auditResults.eligible_courses.length > 0 ? (
+            <div className={styles.courseGrid}>
+              {auditResults.eligible_courses.map((course) => (
+                <article key={course.course_code} className={styles.courseCard}>
+                  <div className={styles.courseTopRow}>
+                    <h4 className={styles.courseCode}>{course.course_code}</h4>
+
+                    <span className={styles.creditPill}>
+                      {course.credits} credits
+                    </span>
+                  </div>
+
+                  <p className={styles.courseTitle}>
+                    {course.course_name || "Course title pending"}
+                  </p>
+                </article>
+              ))}
+            </div>
           ) : (
-            <p className={styles.emptyText}>No remaining requirements.</p>
+            <p className={styles.emptyText}>No eligible courses yet.</p>
           )}
+        </div>
+
+        <div className={styles.footerNote}>
+          <p className={styles.footerText}>
+            Your upload session is stored, so you can move into scheduling
+            preferences next.
+          </p>
         </div>
 
         <Link

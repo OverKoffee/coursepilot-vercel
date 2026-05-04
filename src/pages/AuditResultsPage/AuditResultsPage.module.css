@@ -8,7 +8,7 @@
   width: min(980px, 100%);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .brandRow {
@@ -43,95 +43,137 @@
   color: var(--text-primary);
 }
 
+.subtitle {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
 .summaryCard,
 .panel,
-.panelWide {
+.footerNote {
   border: 1px solid rgba(91, 141, 239, 0.18);
   background: rgba(8, 19, 46, 0.78);
   border-radius: 18px;
   padding: 22px 24px;
 }
 
+.summaryHeader,
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .sectionTitle,
 .panelTitle {
-  margin: 0 0 14px;
+  margin: 0;
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
-.creditRow {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 8px;
+.summaryProgram,
+.panelSubtitle,
+.footerText,
+.emptyText {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
 }
 
-.creditValue {
-  font-size: 3rem;
+.sessionBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(121, 181, 255, 0.28);
+  border-radius: 999px;
+  color: #b8d6ff;
+  background: rgba(35, 78, 145, 0.22);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.metricCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid rgba(121, 181, 255, 0.18);
+  border-radius: 14px;
+  background: rgba(13, 30, 70, 0.52);
+  padding: 18px 20px;
+}
+
+.metricValue {
+  font-size: 2.6rem;
   line-height: 1;
   font-weight: 800;
   color: var(--text-primary);
 }
 
-.creditLabel {
+.metricLabel {
   font-size: 0.95rem;
   color: var(--text-secondary);
 }
 
-.summaryMeta {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-}
-
-.topGrid {
+.courseGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  margin-top: 18px;
 }
 
-.badgeSuccess,
-.badgeWarning {
+.courseCard {
+  border: 1px solid rgba(121, 181, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(13, 30, 70, 0.52);
+  padding: 18px 20px;
+}
+
+.courseTopRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.courseCode {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.creditPill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 96px;
-  height: 30px;
-  padding: 0 14px;
+  min-height: 28px;
+  padding: 0 10px;
   border-radius: 999px;
+  background: rgba(26, 90, 50, 0.3);
+  border: 1px solid rgba(72, 201, 114, 0.35);
+  color: #a8efb8;
   font-size: 0.8rem;
-  margin-bottom: 16px;
+  white-space: nowrap;
 }
 
-.badgeSuccess {
-  color: #8df4a6;
-  border: 1px solid rgba(72, 201, 114, 0.45);
-  background: rgba(26, 90, 50, 0.35);
-}
-
-.badgeWarning {
-  color: #f4b167;
-  border: 1px solid rgba(255, 145, 0, 0.45);
-  background: rgba(102, 52, 0, 0.35);
-}
-
-.list {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--text-secondary);
-}
-
-.listItem {
-  margin-bottom: 12px;
-  line-height: 1.45;
-}
-
-.requirementsText,
-.emptyText {
-  margin: 0;
+.courseTitle {
+  margin: 10px 0 0;
   font-size: 0.95rem;
-  line-height: 1.6;
+  line-height: 1.55;
   color: var(--text-secondary);
 }
 
@@ -142,17 +184,19 @@
 }
 
 @media (max-width: 760px) {
-  .topGrid {
+  .summaryHeader,
+  .panelHeader,
+  .courseTopRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .metricsGrid,
+  .courseGrid {
     grid-template-columns: 1fr;
   }
 
-  .creditRow {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-
-  .creditValue {
-    font-size: 2.5rem;
+  .metricValue {
+    font-size: 2.2rem;
   }
 }
