@@ -84,20 +84,54 @@ describe("UploadTranscriptPage", () => {
   it("calls analyzeTranscript, stores results, and navigates on success", async () => {
     const user = userEvent.setup();
 
-    vi.mocked(analyzeTranscript).mockResolvedValue({
+    const mockAuditResults = {
       session_id: "00000000-0000-4000-8000-000000000001",
-      total_transferred_credits: 84,
-      accepted_courses: ["CMSC 150"],
-      needs_review_courses: ["BIO 201"],
-      remaining_requirements: ["CMSC 320"],
-    });
+      major: "Data Science",
+      minor: "Mathematics",
+      completed_courses: [
+        {
+          course_code: "CMSC 150",
+          course_name: "Introduction to Programming",
+          credits: 3,
+          grade: "A",
+        },
+      ],
+      total_completed_credits: 3,
+      credits_remaining: 3,
+      eligible_courses: [
+        {
+          course_code: "CMSC 320",
+          course_name: "Relational Database Concepts and Applications",
+          credits: 3,
+        },
+      ],
+      remaining_requirements: [
+        {
+          course_code: "CMSC 320",
+          course_name: "Relational Database Concepts and Applications",
+          credits: 3,
+        },
+      ],
+      needs_review_courses: [
+        {
+          course_code: "BIO 201",
+          course_name: "Biology I",
+          credits: 4,
+          grade: "D",
+        },
+      ],
+    };
+
+    vi.mocked(analyzeTranscript).mockResolvedValue(mockAuditResults);
 
     render(<UploadTranscriptPage />);
 
     await user.click(screen.getByRole("button", { name: /mock select file/i }));
     await user.selectOptions(screen.getByLabelText(/major/i), "Data Science");
     await user.selectOptions(screen.getByLabelText(/minor/i), "Mathematics");
-    await user.click(screen.getByRole("button", { name: /analyze transcript/i }));
+    await user.click(
+      screen.getByRole("button", { name: /analyze transcript/i }),
+    );
 
     await waitFor(() => {
       expect(analyzeTranscript).toHaveBeenCalledTimes(1);
@@ -109,19 +143,15 @@ describe("UploadTranscriptPage", () => {
       minor: "Mathematics",
     });
 
-    expect(localStorage.getItem("session_id")).toBe("mock-session-001");
+    expect(localStorage.getItem("session_id")).toBe(
+      "00000000-0000-4000-8000-000000000001",
+    );
     expect(localStorage.getItem("selected_major")).toBe("Data Science");
     expect(localStorage.getItem("selected_minor")).toBe("Mathematics");
 
     expect(mockNavigate).toHaveBeenCalledWith("/audit-results", {
       state: {
-        auditResults: {
-          session_id: "mock-session-001",
-          total_transferred_credits: 84,
-          accepted_courses: ["CMSC 150"],
-          needs_review_courses: ["BIO 201"],
-          remaining_requirements: ["CMSC 320"],
-        },
+        auditResults: mockAuditResults,
         major: "Data Science",
         minor: "Mathematics",
       },
@@ -138,7 +168,9 @@ describe("UploadTranscriptPage", () => {
     render(<UploadTranscriptPage />);
 
     await user.click(screen.getByRole("button", { name: /mock select file/i }));
-    await user.click(screen.getByRole("button", { name: /analyze transcript/i }));
+    await user.click(
+      screen.getByRole("button", { name: /analyze transcript/i }),
+    );
 
     expect(
       await screen.findByText(/upload failed with status 500/i),
