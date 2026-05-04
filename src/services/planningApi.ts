@@ -29,8 +29,9 @@ interface ParsedCourse {
   grade: string;
 }
 
+// Mock flags for testing without API calls.
 const USE_MOCK_TRANSCRIPT_ANALYSIS = false;
-const USE_MOCK_SCHEDULE_GENERATION = true;
+const USE_MOCK_SCHEDULE_GENERATION = false;
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
