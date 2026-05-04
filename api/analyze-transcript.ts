@@ -3,7 +3,11 @@ import OpenAI from "openai";
 import {
   transcriptAnalysisPrompt,
   transcriptAnalysisSchema,
-} from "./openaiPrompts";
+} from "./openaiPrompts.js";
+
+export const config = {
+  maxDuration: 60,
+};
 
 interface AnalyzeTranscriptRequestBody {
   fileBase64?: string;
@@ -79,8 +83,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json(JSON.parse(response.output_text));
   } catch (err) {
     console.error("API ERROR:", err);
+
     return res.status(500).json({
-      error: "Failed to analyze transcript",
+      error:
+        err instanceof Error ? err.message : "Failed to analyze transcript",
     });
   }
 }

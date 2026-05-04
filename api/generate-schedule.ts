@@ -3,8 +3,8 @@ import OpenAI from "openai";
 import {
   scheduleGenerationPrompt,
   scheduleGenerationSchema,
-} from "./openaiPrompts";
-import { courseCatalog } from "../src/data/courseRequirements";
+} from "./openaiPrompts.js";
+import { courseCatalog } from "../src/data/courseRequirements.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log("SCHEDULE API 1: request received");
