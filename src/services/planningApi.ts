@@ -238,8 +238,16 @@ export async function analyzeTranscript({
     console.log("4. API response status:", aiResponse.status);
 
     if (!aiResponse.ok) {
-      const errorData = (await aiResponse.json()) as { error?: string };
-      throw new Error(errorData.error ?? "Transcript analysis failed.");
+      const errorText = await aiResponse.text();
+
+      try {
+        const errorData = JSON.parse(errorText) as { error?: string };
+        throw new Error(errorData.error ?? "Transcript analysis failed.");
+      } catch {
+        throw new Error(
+          `Transcript analysis failed with status ${aiResponse.status}: ${errorText}`,
+        );
+      }
     }
 
     const analyzedTranscript = (await aiResponse.json()) as {
@@ -377,6 +385,7 @@ export async function generateScheduleOptions({
     body: JSON.stringify({
       session_id: sessionId,
       preferences,
+      planning_date: new Date().toISOString(),
       audit_context: auditContext ? JSON.parse(auditContext) : null,
     }),
   });

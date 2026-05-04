@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: "Missing OPENAI_API_KEY" });
     }
 
-    const { session_id, preferences, audit_context } = req.body;
+    const { session_id, preferences, audit_context, planning_date } = req.body;
 
     if (!session_id || !preferences || !audit_context) {
       return res.status(400).json({
@@ -32,6 +32,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const planningPayload = {
       session_id,
+      planning_date: planning_date ?? new Date().toISOString(),
       preferences,
       audit_context,
       course_catalog: courseCatalog,

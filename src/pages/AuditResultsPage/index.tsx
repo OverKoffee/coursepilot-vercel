@@ -83,8 +83,7 @@ export default function AuditResultsPage() {
             <div>
               <h3 className={styles.panelTitle}>Eligible Courses</h3>
               <p className={styles.panelSubtitle}>
-                These are the options we can use in schedule generation while
-                the backend planning flow is still mocked.
+                {/* No subtitle needed currently */}
               </p>
             </div>
           </div>

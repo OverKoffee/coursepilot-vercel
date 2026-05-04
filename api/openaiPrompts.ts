@@ -67,6 +67,9 @@ Rules:
 - Include course breakdown notes as short plain-English strings.
 - Do not invent courses.
 - Return structured JSON only.
+- Use the provided planning_date as the current date. Do not base the schedule start year on transcript course years.
+- Build the plan from the next reasonable academic term after planning_date.
+- Use the target graduation date only as the desired completion deadline.
 `;
 
 export const scheduleGenerationSchema = {
