@@ -123,29 +123,35 @@ export default function ResultsPage() {
           </div>
 
           <div className={styles.semesterGrid}>
-            {scheduleResults.recommended_plan.semesters.map((semester) => (
-              <article
-                key={semester.term_label}
-                className={styles.semesterCard}
-              >
-                <div className={styles.semesterHeader}>
-                  <h3 className={styles.semesterTitle}>
-                    {semester.term_label}
-                  </h3>
-                  <span className={styles.courseCountBadge}>
-                    {semester.courses.length} courses
-                  </span>
-                </div>
+            {scheduleResults.recommended_plan.semesters.map(
+              (semester, semesterIndex) => (
+                <article
+                  key={`${semester.term_label}-${semesterIndex}`}
+                  className={styles.semesterCard}
+                >
+                  <div className={styles.semesterHeader}>
+                    <h3 className={styles.semesterTitle}>
+                      {semester.term_label}
+                    </h3>
 
-                <ul className={styles.list}>
-                  {semester.courses.map((course) => (
-                    <li key={course} className={styles.listItem}>
-                      {course}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
+                    <span className={styles.courseCountBadge}>
+                      {semester.courses.length} courses
+                    </span>
+                  </div>
+
+                  <ul className={styles.list}>
+                    {semester.courses.map((course, courseIndex) => (
+                      <li
+                        key={`${course}-${courseIndex}`}
+                        className={styles.listItem}
+                      >
+                        {course}
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ),
+            )}
           </div>
         </div>
 
