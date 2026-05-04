@@ -1,4 +1,9 @@
 import { supabase } from "../lib/supabase";
+import {
+  courseCatalog,
+  getEligibleCourses,
+  getRemainingRequirements,
+} from "../data/courseRequirements";
 import type {
   SchedulePreferences,
   ScheduleResultsResponse,
@@ -30,8 +35,8 @@ export interface AnalyzeTranscriptResponse {
   remaining_requirements: string[];
 }
 
-const USE_MOCK_DATA = true;
-const GENERATE_SCHEDULE_ENDPOINT = "http://localhost:8000/plan/options";
+const USE_MOCK_TRANSCRIPT_ANALYSIS = false;
+const USE_MOCK_SCHEDULE_GENERATION = true;
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -44,66 +49,92 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
+function normalizeCourseCode(courseCode: string): string {
+  return courseCode.trim().toUpperCase().replace(/\s+/g, " ");
+}
+
+function normalizeTranscriptAnalysisResponse(courses: ParsedCourse[]) {
+  const uniqueCourses = new Map<string, ParsedCourse>();
+
+  for (const course of courses) {
+    const courseCode = normalizeCourseCode(course.course_code);
+
+    if (!courseCode) {
+      continue;
+    }
+
+    uniqueCourses.set(courseCode, {
+      course_code: courseCode,
+      course_name:
+        course.course_name || courseCatalog[courseCode]?.title || "",
+      credits: course.credits || courseCatalog[courseCode]?.credits || 3,
+      grade: course.grade || "T",
+    });
+  }
+
+  return Array.from(uniqueCourses.values());
+}
+
+function getMockTranscriptCourses(): ParsedCourse[] {
+  return [
+    {
+      course_code: "CMSC 495",
+      course_name: "Capstone in Computer Science",
+      credits: 3,
+      grade: "A",
+    },
+    {
+      course_code: "CMSC 451",
+      course_name: "Design and Analysis of Algorithms",
+      credits: 3,
+      grade: "A",
+    },
+    {
+      course_code: "CMSC 335",
+      course_name: "Object-Oriented and Concurrent Programming",
+      credits: 3,
+      grade: "A",
+    },
+    {
+      course_code: "CMSC 405",
+      course_name: "Computer Graphics",
+      credits: 3,
+      grade: "A",
+    },
+  ];
+}
+
 function getMockScheduleResultsResponse(
   sessionId: string,
   preferences: SchedulePreferences,
 ): ScheduleResultsResponse {
-  const recommendedPlan =
-    preferences.enrollment_pace === "light"
-      ? {
-          title: "Recommended Plan",
-          recommended: true,
-          semesters: [
-            {
-              term_label: "Fall 2026",
-              courses: ["CMSC 320", "STAT 200"],
-            },
-            {
-              term_label: "Spring 2027",
-              courses: ["CMSC 335", "Upper-level elective"],
-            },
-          ],
-        }
-      : preferences.enrollment_pace === "heavy"
-        ? {
-            title: "Recommended Plan",
-            recommended: true,
-            semesters: [
-              {
-                term_label: "Fall 2026",
-                courses: ["CMSC 320", "CMSC 335", "STAT 200"],
-              },
-              {
-                term_label: "Spring 2027",
-                courses: ["Upper-level elective", "Capstone"],
-              },
-            ],
-          }
-        : {
-            title: "Recommended Plan",
-            recommended: true,
-            semesters: [
-              {
-                term_label: "Fall 2026",
-                courses: ["CMSC 320", "CMSC 335"],
-              },
-              {
-                term_label: "Spring 2027",
-                courses: ["STAT 200", "Upper-level elective"],
-              },
-              {
-                term_label: "Fall 2027",
-                courses: ["Capstone"],
-              },
-            ],
-          };
-
   return {
     session_id: sessionId,
-    recommended_plan: recommendedPlan,
+    recommended_plan: {
+      title: "Recommended Plan",
+      recommended: true,
+      semesters: [
+        {
+          term_label: "Fall 2026",
+          courses: ["CMSC 105", "CMSC 115"],
+        },
+        {
+          term_label: "Spring 2027",
+          courses: ["CMSC 215", "CMSC 255"],
+        },
+        {
+          term_label: "Fall 2027",
+          courses: ["CMSC 315", "CMSC 412"],
+        },
+        {
+          term_label: "Spring 2028",
+          courses: ["CMSC 430", "CMSC 325"],
+        },
+      ],
+    },
     alternate_plans: [
-      "Take one lighter semester first, then increase pace after completing CMSC 320.",
-      "Front-load quantitative coursework early, then shift to upper-level electives.",
+      "Take one lighter semester first, then increase pace after completing the programming sequence.",
+      "Front-load prerequisite-heavy courses first so upper-level requirements unlock sooner.",
     ],
     course_breakdown: [
       `Enrollment pace: ${preferences.enrollment_pace}`,
@@ -114,12 +145,15 @@ function getMockScheduleResultsResponse(
   };
 }
 
+
+// TODO: Remove console logs once flow working.
 export async function analyzeTranscript({
   file,
   major,
   minor,
 }: AnalyzeTranscriptParams): Promise<AnalyzeTranscriptResponse> {
   console.log("1. Checking Supabase user...");
+
   const { data: userData, error: userError } = await supabase.auth.getUser();
   const user = userData.user;
 
@@ -127,73 +161,105 @@ export async function analyzeTranscript({
     throw new Error("User not authenticated.");
   }
 
-  console.log("2. Reading file...");
-  const fileBuffer = await file.arrayBuffer();
-  const fileBase64 = arrayBufferToBase64(fileBuffer);
+  let parsedCourses: ParsedCourse[];
 
-  console.log("3. Calling API...");
-  const controller = new AbortController();
+  if (USE_MOCK_TRANSCRIPT_ANALYSIS) {
+    parsedCourses = getMockTranscriptCourses();
+  } else {
+    console.log("2. Reading file...");
 
-  const timeoutId = window.setTimeout(() => {
-    controller.abort();
-  }, 30000);
+    const fileBuffer = await file.arrayBuffer();
+    const fileBase64 = arrayBufferToBase64(fileBuffer);
 
-  const aiResponse = await fetch("/api/analyze-transcript", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    signal: controller.signal,
-    body: JSON.stringify({
-      fileBase64,
-      fileName: file.name,
-      major,
-      minor,
-    }),
-  });
+    console.log("3. Calling Vercel API...");
+    console.log("Selected file:", file.name);
+    console.log("Base64 length:", fileBase64.length);
 
-  window.clearTimeout(timeoutId);
+    const controller = new AbortController();
 
-  console.log("4. API response status:", aiResponse.status);
+    const timeoutId = window.setTimeout(() => {
+      controller.abort();
+    }, 60000);
 
-  if (!aiResponse.ok) {
-    const errorData = (await aiResponse.json()) as { error?: string };
-    throw new Error(errorData.error ?? "Transcript analysis failed.");
+    const aiResponse = await fetch("/api/analyze-transcript", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        fileBase64,
+        fileName: file.name,
+        major,
+        minor,
+      }),
+    });
+
+    window.clearTimeout(timeoutId);
+
+    console.log("4. API response status:", aiResponse.status);
+
+    if (!aiResponse.ok) {
+      const errorData = (await aiResponse.json()) as { error?: string };
+      throw new Error(errorData.error ?? "Transcript analysis failed.");
+    }
+
+    const analyzedTranscript = (await aiResponse.json()) as {
+      courses: ParsedCourse[];
+    };
+
+    console.log("API RESPONSE TO FRONTEND:");
+    console.log(analyzedTranscript);
+
+    parsedCourses = normalizeTranscriptAnalysisResponse(
+      analyzedTranscript.courses,
+    );
   }
 
-  const analyzedTranscript = (await aiResponse.json()) as {
-    courses: ParsedCourse[];
-  };
+  const acceptedCourses = parsedCourses.map((course) => course.course_code);
+  const remainingRequirements = getRemainingRequirements(major, acceptedCourses);
+  const eligibleCourses = getEligibleCourses(remainingRequirements);
 
-  const parsedCourses = analyzedTranscript.courses;
+  console.log("Parsed courses:", parsedCourses);
+  console.log("Accepted courses:", acceptedCourses);
+  console.log("Remaining requirements:", remainingRequirements);
+  console.log("Eligible courses:", eligibleCourses);
 
-  const { error: uploadError } = await supabase
-    .from("transcript_uploads")
-    .insert({
-      user_id: user.id,
-      file_name: file.name,
-      parsed_text: `AI parsed ${parsedCourses.length} courses from ${file.name}.`,
-    });
+  const { error: uploadError } = await supabase.from("transcript_uploads").insert({
+    user_id: user.id,
+    file_name: file.name,
+    parsed_text: `AI parsed ${parsedCourses.length} courses from ${file.name}.`,
+  });
 
   if (uploadError) {
     throw new Error(uploadError.message);
   }
 
-  const { error: courseError } = await supabase
-    .from("completed_courses")
-    .insert(
-      parsedCourses.map((course) => ({
-        user_id: user.id,
-        course_code: course.course_code,
-        course_name: course.course_name,
-        credits: course.credits,
-        grade: course.grade,
-      })),
-    );
+  const { error: courseError } = await supabase.from("completed_courses").insert(
+    parsedCourses.map((course) => ({
+      user_id: user.id,
+      course_code: course.course_code,
+      course_name: course.course_name,
+      credits: course.credits,
+      grade: course.grade,
+    })),
+  );
 
   if (courseError) {
     throw new Error(courseError.message);
   }
+
+  sessionStorage.setItem(
+    "coursepilot_audit_context",
+    JSON.stringify({
+      major,
+      minor,
+      accepted_courses: acceptedCourses,
+      remaining_requirements: remainingRequirements,
+      eligible_courses: eligibleCourses,
+      parsed_courses: parsedCourses,
+    }),
+  );
 
   return {
     session_id: crypto.randomUUID(),
@@ -201,9 +267,9 @@ export async function analyzeTranscript({
       (sum, course) => sum + course.credits,
       0,
     ),
-    accepted_courses: parsedCourses.map((course) => course.course_code),
+    accepted_courses: eligibleCourses,
     needs_review_courses: [],
-    remaining_requirements: ["CMSC 320", "CMSC 335"],
+    remaining_requirements: remainingRequirements,
   };
 }
 
@@ -211,13 +277,14 @@ export async function generateScheduleOptions({
   sessionId,
   preferences,
 }: GenerateScheduleOptionsParams): Promise<ScheduleResultsResponse> {
-  if (USE_MOCK_DATA) {
+  if (USE_MOCK_SCHEDULE_GENERATION) {
     await new Promise((resolve) => setTimeout(resolve, 900));
-
     return getMockScheduleResultsResponse(sessionId, preferences);
   }
 
-  const response = await fetch(GENERATE_SCHEDULE_ENDPOINT, {
+  const auditContext = sessionStorage.getItem("coursepilot_audit_context");
+
+  const response = await fetch("/api/generate-schedule", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -225,13 +292,12 @@ export async function generateScheduleOptions({
     body: JSON.stringify({
       session_id: sessionId,
       preferences,
+      audit_context: auditContext ? JSON.parse(auditContext) : null,
     }),
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Schedule generation failed with status ${response.status}`,
-    );
+    throw new Error(`Schedule generation failed with status ${response.status}`);
   }
 
   return (await response.json()) as ScheduleResultsResponse;
