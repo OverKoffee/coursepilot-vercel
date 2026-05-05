@@ -192,6 +192,11 @@
   line-height: 1.5;
 }
 
+.listEmpty {
+  margin: 12px 0 0;
+  color: var(--text-secondary);
+}
+
 .actions {
   display: flex;
   gap: 16px;

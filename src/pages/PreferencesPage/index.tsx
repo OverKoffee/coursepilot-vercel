@@ -202,11 +202,11 @@ export default function PreferencesPage() {
         </div>
 
         <div className={styles.header}>
-          <h1 className={styles.title}>Build your schedule</h1>
+          <h1 className={styles.title}>Set your schedule preferences</h1>
 
           {parsedStoredAuditResults ? (
             <p className={styles.summaryLine}>
-              {parsedStoredAuditResults.credits_remaining} credits remaining •{" "}
+              {parsedStoredAuditResults.credits_remaining} credits remaining |{" "}
               {parsedStoredAuditResults.eligible_courses.length} eligible now
             </p>
           ) : null}
@@ -267,7 +267,7 @@ export default function PreferencesPage() {
           <h2 className={styles.sectionTitle}>Preferred Course Intensity</h2>
 
           <p className={styles.sectionHint}>
-            How comfortable are you with heavier coursework — whether that means
+            How comfortable are you with heavier coursework, whether that means
             dense reading, lab work, problem sets, or writing assignments?
           </p>
 
@@ -354,7 +354,7 @@ export default function PreferencesPage() {
             className={`btn btn-primary ${styles.actionButton}`}
             disabled={isGenerating}
           >
-            {isGenerating ? "Generating..." : "Generate my schedule options"}
+            {isGenerating ? "Generating..." : "Generate schedule options"}
           </button>
         </div>
       </div>

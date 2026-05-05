@@ -81,9 +81,10 @@ export default function UploadTranscriptPage() {
         </div>
 
         <div className={styles.header}>
-          <h1 className={styles.title}>Step 1: Upload transcript</h1>
+          <h1 className={styles.title}>Upload your transcript</h1>
           <p className={styles.subtitle}>
-            PDF only. We extract course name, credits, and grade data.
+            Upload a PDF transcript so we can identify completed courses,
+            credits, and grades.
           </p>
         </div>
 
@@ -139,12 +140,12 @@ export default function UploadTranscriptPage() {
           disabled={!file || isUploading}
           className={`btn btn-primary ${styles.button}`}
         >
-          {isUploading ? "Analyzing..." : "Analyze Transcript"}
+          {isUploading ? "Analyzing..." : "Analyze transcript"}
         </button>
 
         {errorMessage && (
           <div className={styles.resultsCard}>
-            <h3 className={styles.resultsTitle}>Upload Error</h3>
+            <h3 className={styles.resultsTitle}>Upload error</h3>
             <div className={styles.resultItem}>
               <p className={styles.resultValue}>{errorMessage}</p>
             </div>

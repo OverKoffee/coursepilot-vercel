@@ -64,10 +64,10 @@ export default function ResultsPage() {
 
         <div className={styles.header}>
           <div>
-            <h1 className={styles.title}>Schedule options</h1>
+            <h1 className={styles.title}>Your schedule options</h1>
             <p className={styles.subtitle}>
-              Here is the recommended path based on your transcript and
-              preferences.
+              Here is the recommended plan based on your transcript progress
+              and schedule preferences.
             </p>
           </div>
 
@@ -76,29 +76,29 @@ export default function ResultsPage() {
           </span>
         </div>
 
-        <div className={styles.metricsGrid}>
-          <div className={styles.metricCard}>
-            <span className={styles.metricValue}>
+        <div className={styles.contextGrid}>
+          <div className={styles.contextCard}>
+            <span className={styles.contextValue}>
               {auditResults?.credits_remaining ?? 0}
             </span>
-            <span className={styles.metricLabel}>credits remaining</span>
+            <span className={styles.contextLabel}>credits remaining</span>
           </div>
 
-          <div className={styles.metricCard}>
-            <span className={styles.metricValue}>{coursesInPlan}</span>
-            <span className={styles.metricLabel}>courses in this plan</span>
+          <div className={styles.contextCard}>
+            <span className={styles.contextValue}>{coursesInPlan}</span>
+            <span className={styles.contextLabel}>courses in this plan</span>
           </div>
 
-          <div className={styles.metricCard}>
-            <span className={styles.metricValue}>
+          <div className={styles.contextCard}>
+            <span className={styles.contextValue}>
               {preferences?.target_graduation ?? "Not set"}
             </span>
-            <span className={styles.metricLabel}>target graduation</span>
+            <span className={styles.contextLabel}>target graduation</span>
           </div>
         </div>
 
         {preferences ? (
-          <div className={styles.preferencePills}>
+          <div className={styles.preferenceStrip}>
             <span className={styles.preferencePill}>
               Pace: {preferences.enrollment_pace}
             </span>
@@ -134,7 +134,7 @@ export default function ResultsPage() {
                       {semester.term_label}
                     </h3>
 
-                    <span className={styles.courseCountBadge}>
+                    <span className={styles.semesterCount}>
                       {semester.courses.length} courses
                     </span>
                   </div>
@@ -157,25 +157,37 @@ export default function ResultsPage() {
 
         <div className={styles.bottomGrid}>
           <div className={styles.panel}>
-            <h3 className={styles.panelTitle}>Alternate Plans</h3>
-            <ul className={styles.list}>
-              {scheduleResults.alternate_plans.map((plan) => (
-                <li key={plan} className={styles.listItem}>
-                  {plan}
-                </li>
-              ))}
-            </ul>
+            <h3 className={styles.panelTitle}>Alternate plans</h3>
+            {scheduleResults.alternate_plans.length > 0 ? (
+              <ul className={styles.list}>
+                {scheduleResults.alternate_plans.map((plan) => (
+                  <li key={plan} className={styles.listItem}>
+                    {plan}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles.listEmpty}>
+                No alternate plans were returned for this schedule.
+              </p>
+            )}
           </div>
 
           <div className={styles.panel}>
-            <h3 className={styles.panelTitle}>Course Breakdown</h3>
-            <ul className={styles.list}>
-              {scheduleResults.course_breakdown.map((item) => (
-                <li key={item} className={styles.listItem}>
-                  {item}
-                </li>
-              ))}
-            </ul>
+            <h3 className={styles.panelTitle}>Plan details</h3>
+            {scheduleResults.course_breakdown.length > 0 ? (
+              <ul className={styles.list}>
+                {scheduleResults.course_breakdown.map((item) => (
+                  <li key={item} className={styles.listItem}>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles.listEmpty}>
+                No additional planning notes were returned for this schedule.
+              </p>
+            )}
           </div>
         </div>
 
