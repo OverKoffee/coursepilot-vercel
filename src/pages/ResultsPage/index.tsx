@@ -41,6 +41,42 @@ export default function ResultsPage() {
   const auditResults = readAuditResults();
   const preferences = readPreferences();
 
+  const enrollmentPaceLabel = (pace?: string) => {
+    switch (pace) {
+      case "heavy":
+        return "Full time";
+      case "moderate":
+        return "Half time";
+      case "light":
+      default:
+        return "Part time";
+    }
+  };
+
+  const outsideCommitmentsLabel = (commitment?: string) => {
+    switch (commitment) {
+      case "school_only":
+        return "Low";
+      case "work_family":
+        return "Medium";
+      case "major_obligations":
+      default:
+        return "High";
+    }
+  };
+
+  const courseIntensityLabel = (intensity?: string) => {
+    switch (intensity) {
+      case "lighter_load":
+        return "Lighter load";
+      case "balanced":
+        return "Balanced";
+      case "intensive":
+      default:
+        return "Intensive";
+    }
+  };
+
   if (!scheduleResults) {
     return <Navigate to="/preferences" replace />;
   }
@@ -66,14 +102,21 @@ export default function ResultsPage() {
           <div>
             <h1 className={styles.title}>Your schedule options</h1>
             <p className={styles.subtitle}>
-              Here is the recommended plan based on your transcript progress
-              and schedule preferences.
+              Here is the recommended plan based on your transcript progress and
+              schedule preferences.
             </p>
           </div>
+
+          {/*
+            Session ID shown here was removed from the UI to avoid
+            exposing internal session identifiers in the frontend.
+            If you need to display or debug the session id, re-enable
+            the element below with caution.
 
           <span className={styles.sessionBadge}>
             Session {scheduleResults.session_id}
           </span>
+          */}
         </div>
 
         <div className={styles.contextGrid}>
@@ -100,13 +143,14 @@ export default function ResultsPage() {
         {preferences ? (
           <div className={styles.preferenceStrip}>
             <span className={styles.preferencePill}>
-              Pace: {preferences.enrollment_pace}
+              Pace: {enrollmentPaceLabel(preferences?.enrollment_pace)}
             </span>
             <span className={styles.preferencePill}>
-              Commitments: {preferences.outside_commitments}
+              Commitments:{" "}
+              {outsideCommitmentsLabel(preferences?.outside_commitments)}
             </span>
             <span className={styles.preferencePill}>
-              Intensity: {preferences.course_intensity}
+              Intensity: {courseIntensityLabel(preferences?.course_intensity)}
             </span>
           </div>
         ) : null}
