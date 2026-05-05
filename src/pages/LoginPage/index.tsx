@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import styles from "./LoginPage.module.css";
@@ -11,7 +11,9 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
     setIsLoading(true);
     setMessage("");
 
@@ -42,48 +44,48 @@ export default function LoginPage() {
             />
             <span className={styles.brandText}>CoursePilot</span>
           </div>
-
-          <button
-            type="button"
-            className={`btn btn-secondary ${styles.helpButton}`}
-          >
-            Help
-          </button>
         </div>
 
         <div className={styles.hero}>
-          <h1 className={styles.title}>Welcome</h1>
+          <h1 className={styles.title}>Sign in to continue planning</h1>
           <p className={styles.subtitle}>
-            Sign in to access your transfer-credit analysis and degree planning.
+            Access your transcript review, degree audit, and schedule builder.
           </p>
         </div>
 
-        <div className={styles.form}>
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={styles.input}
-          />
+        <form className={styles.form} onSubmit={handleLogin}>
+          <label className={styles.fieldGroup}>
+            <span className={styles.label}>Email</span>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={styles.input}
+              autoComplete="email"
+            />
+          </label>
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={styles.input}
-          />
+          <label className={styles.fieldGroup}>
+            <span className={styles.label}>Password</span>
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={styles.input}
+              autoComplete="current-password"
+            />
+          </label>
 
           <button
-            type="button"
-            onClick={handleLogin}
+            type="submit"
             disabled={!email || !password || isLoading}
             className={`btn btn-primary ${styles.primaryButton}`}
           >
             {isLoading ? "Signing in..." : "Sign in"}
           </button>
-        </div>
+        </form>
 
         {message && <p className={styles.message}>{message}</p>}
       </div>

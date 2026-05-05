@@ -41,17 +41,6 @@
   margin-right: -6px;
 }
 
-.helpButton {
-  padding: 0.35rem 0.65rem;
-  font-size: var(--font-meta-size);
-  min-height: unset;
-  opacity: 0.9;
-}
-
-.helpButton:hover {
-  opacity: 1;
-}
-
 .hero {
   margin-bottom: 2rem;
   max-width: 520px;

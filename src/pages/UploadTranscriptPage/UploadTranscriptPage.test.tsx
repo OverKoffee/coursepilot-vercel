@@ -50,7 +50,7 @@ describe("UploadTranscriptPage", () => {
     render(<UploadTranscriptPage />);
 
     expect(
-      screen.getByRole("heading", { name: /step 1: upload transcript/i }),
+      screen.getByRole("heading", { name: /upload your transcript/i }),
     ).toBeInTheDocument();
 
     expect(screen.getByLabelText(/major/i)).toBeInTheDocument();

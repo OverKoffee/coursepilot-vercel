@@ -41,6 +41,42 @@ export default function ResultsPage() {
   const auditResults = readAuditResults();
   const preferences = readPreferences();
 
+  const enrollmentPaceLabel = (pace?: string) => {
+    switch (pace) {
+      case "heavy":
+        return "Full time";
+      case "moderate":
+        return "Half time";
+      case "light":
+      default:
+        return "Part time";
+    }
+  };
+
+  const outsideCommitmentsLabel = (commitment?: string) => {
+    switch (commitment) {
+      case "school_only":
+        return "Low";
+      case "work_family":
+        return "Medium";
+      case "major_obligations":
+      default:
+        return "High";
+    }
+  };
+
+  const courseIntensityLabel = (intensity?: string) => {
+    switch (intensity) {
+      case "lighter_load":
+        return "Lighter load";
+      case "balanced":
+        return "Balanced";
+      case "intensive":
+      default:
+        return "Intensive";
+    }
+  };
+
   if (!scheduleResults) {
     return <Navigate to="/preferences" replace />;
   }
@@ -64,49 +100,57 @@ export default function ResultsPage() {
 
         <div className={styles.header}>
           <div>
-            <h1 className={styles.title}>Schedule options</h1>
+            <h1 className={styles.title}>Your schedule options</h1>
             <p className={styles.subtitle}>
-              Here is the recommended path based on your transcript and
-              preferences.
+              Here is the recommended plan based on your transcript progress and
+              schedule preferences.
             </p>
           </div>
+
+          {/*
+            Session ID shown here was removed from the UI to avoid
+            exposing internal session identifiers in the frontend.
+            If you need to display or debug the session id, re-enable
+            the element below with caution.
 
           <span className={styles.sessionBadge}>
             Session {scheduleResults.session_id}
           </span>
+          */}
         </div>
 
-        <div className={styles.metricsGrid}>
-          <div className={styles.metricCard}>
-            <span className={styles.metricValue}>
+        <div className={styles.contextGrid}>
+          <div className={styles.contextCard}>
+            <span className={styles.contextValue}>
               {auditResults?.credits_remaining ?? 0}
             </span>
-            <span className={styles.metricLabel}>credits remaining</span>
+            <span className={styles.contextLabel}>credits remaining</span>
           </div>
 
-          <div className={styles.metricCard}>
-            <span className={styles.metricValue}>{coursesInPlan}</span>
-            <span className={styles.metricLabel}>courses in this plan</span>
+          <div className={styles.contextCard}>
+            <span className={styles.contextValue}>{coursesInPlan}</span>
+            <span className={styles.contextLabel}>courses in this plan</span>
           </div>
 
-          <div className={styles.metricCard}>
-            <span className={styles.metricValue}>
+          <div className={styles.contextCard}>
+            <span className={styles.contextValue}>
               {preferences?.target_graduation ?? "Not set"}
             </span>
-            <span className={styles.metricLabel}>target graduation</span>
+            <span className={styles.contextLabel}>target graduation</span>
           </div>
         </div>
 
         {preferences ? (
-          <div className={styles.preferencePills}>
+          <div className={styles.preferenceStrip}>
             <span className={styles.preferencePill}>
-              Pace: {preferences.enrollment_pace}
+              Pace: {enrollmentPaceLabel(preferences?.enrollment_pace)}
             </span>
             <span className={styles.preferencePill}>
-              Commitments: {preferences.outside_commitments}
+              Commitments:{" "}
+              {outsideCommitmentsLabel(preferences?.outside_commitments)}
             </span>
             <span className={styles.preferencePill}>
-              Intensity: {preferences.course_intensity}
+              Intensity: {courseIntensityLabel(preferences?.course_intensity)}
             </span>
           </div>
         ) : null}
@@ -134,7 +178,7 @@ export default function ResultsPage() {
                       {semester.term_label}
                     </h3>
 
-                    <span className={styles.courseCountBadge}>
+                    <span className={styles.semesterCount}>
                       {semester.courses.length} courses
                     </span>
                   </div>
@@ -157,25 +201,37 @@ export default function ResultsPage() {
 
         <div className={styles.bottomGrid}>
           <div className={styles.panel}>
-            <h3 className={styles.panelTitle}>Alternate Plans</h3>
-            <ul className={styles.list}>
-              {scheduleResults.alternate_plans.map((plan) => (
-                <li key={plan} className={styles.listItem}>
-                  {plan}
-                </li>
-              ))}
-            </ul>
+            <h3 className={styles.panelTitle}>Alternate plans</h3>
+            {scheduleResults.alternate_plans.length > 0 ? (
+              <ul className={styles.list}>
+                {scheduleResults.alternate_plans.map((plan) => (
+                  <li key={plan} className={styles.listItem}>
+                    {plan}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles.listEmpty}>
+                No alternate plans were returned for this schedule.
+              </p>
+            )}
           </div>
 
           <div className={styles.panel}>
-            <h3 className={styles.panelTitle}>Course Breakdown</h3>
-            <ul className={styles.list}>
-              {scheduleResults.course_breakdown.map((item) => (
-                <li key={item} className={styles.listItem}>
-                  {item}
-                </li>
-              ))}
-            </ul>
+            <h3 className={styles.panelTitle}>Plan details</h3>
+            {scheduleResults.course_breakdown.length > 0 ? (
+              <ul className={styles.list}>
+                {scheduleResults.course_breakdown.map((item) => (
+                  <li key={item} className={styles.listItem}>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={styles.listEmpty}>
+                No additional planning notes were returned for this schedule.
+              </p>
+            )}
           </div>
         </div>
 

@@ -29,7 +29,6 @@ interface ParsedCourse {
   grade: string;
 }
 
-// Mock flags for testing without API calls.
 const USE_MOCK_TRANSCRIPT_ANALYSIS = false;
 const USE_MOCK_SCHEDULE_GENERATION = false;
 
@@ -58,10 +57,16 @@ function normalizeTranscriptAnalysisResponse(courses: ParsedCourse[]) {
       continue;
     }
 
+    // Ensure credits are numeric and round up any decimal values
+    const rawCredits =
+      course.credits ?? courseCatalog[courseCode]?.credits ?? 3;
+    const numericCredits = Number(rawCredits) || 0;
+    const credits = Math.ceil(numericCredits);
+
     uniqueCourses.set(courseCode, {
       course_code: courseCode,
       course_name: course.course_name || courseCatalog[courseCode]?.title || "",
-      credits: course.credits || courseCatalog[courseCode]?.credits || 3,
+      credits,
       grade: course.grade || "T",
     });
   }
@@ -151,7 +156,6 @@ function normalizeGrade(grade: string): string {
   return grade.trim().toUpperCase();
 }
 
-// Added helper functions to determine if a course is completed or needs review based on grade.
 function isPassingForDegree(grade: string): boolean {
   const normalizedGrade = normalizeGrade(grade);
 
@@ -184,14 +188,11 @@ function needsManualReview(grade: string): boolean {
   );
 }
 
-// TODO: Remove console.logs once flow working.
 export async function analyzeTranscript({
   file,
   major,
   minor,
 }: AnalyzeTranscriptParams): Promise<AuditResultsResponse> {
-  console.log("1. Checking Supabase user...");
-
   const { data: userData, error: userError } = await supabase.auth.getUser();
   const user = userData.user;
 
@@ -204,15 +205,8 @@ export async function analyzeTranscript({
   if (USE_MOCK_TRANSCRIPT_ANALYSIS) {
     parsedCourses = getMockTranscriptCourses();
   } else {
-    console.log("2. Reading file...");
-
     const fileBuffer = await file.arrayBuffer();
     const fileBase64 = arrayBufferToBase64(fileBuffer);
-
-    console.log("3. Calling Vercel API...");
-    console.log("Selected file:", file.name);
-    console.log("Base64 length:", fileBase64.length);
-
     const controller = new AbortController();
 
     const timeoutId = window.setTimeout(() => {
@@ -235,8 +229,6 @@ export async function analyzeTranscript({
 
     window.clearTimeout(timeoutId);
 
-    console.log("4. API response status:", aiResponse.status);
-
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
 
@@ -253,9 +245,6 @@ export async function analyzeTranscript({
     const analyzedTranscript = (await aiResponse.json()) as {
       courses: ParsedCourse[];
     };
-
-    console.log("API RESPONSE TO FRONTEND:");
-    console.log(analyzedTranscript);
 
     parsedCourses = normalizeTranscriptAnalysisResponse(
       analyzedTranscript.courses,
@@ -311,12 +300,6 @@ export async function analyzeTranscript({
     (sum, course) => sum + course.credits,
     0,
   );
-
-  console.log("Parsed courses:", parsedCourses);
-  console.log("Completed course codes:", completedCourseCodes);
-  console.log("Remaining requirements:", remainingRequirementCards);
-  console.log("Eligible courses:", eligibleCourseCards);
-  console.log("Credits remaining:", creditsRemaining);
 
   const { error: uploadError } = await supabase
     .from("transcript_uploads")
