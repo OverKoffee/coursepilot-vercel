@@ -17,6 +17,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .link {
@@ -38,4 +39,54 @@
 .active {
   background-color: var(--primary-soft-color);
   color: var(--primary-color);
+}
+
+.userActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: 0.25rem;
+}
+
+.userBadge {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted-color);
+  font-size: var(--font-meta-size);
+}
+
+.signOutButton {
+  min-height: 36px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-color);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.signOutButton:hover {
+  background-color: var(--surface-elevated-color);
+  color: var(--text-strong-color);
+}
+
+@media (max-width: 760px) {
+  .userActions {
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+  }
+
+  .userBadge {
+    max-width: none;
+    flex: 1;
+  }
 }
