@@ -57,10 +57,16 @@ function normalizeTranscriptAnalysisResponse(courses: ParsedCourse[]) {
       continue;
     }
 
+    // Ensure credits are numeric and round up any decimal values
+    const rawCredits =
+      course.credits ?? courseCatalog[courseCode]?.credits ?? 3;
+    const numericCredits = Number(rawCredits) || 0;
+    const credits = Math.ceil(numericCredits);
+
     uniqueCourses.set(courseCode, {
       course_code: courseCode,
       course_name: course.course_name || courseCatalog[courseCode]?.title || "",
-      credits: course.credits || courseCatalog[courseCode]?.credits || 3,
+      credits,
       grade: course.grade || "T",
     });
   }
